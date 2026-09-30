@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عصيرات الامانة  - Shop Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-area, #printable-area *, #daily-printable-area, #daily-printable-area * {
+                visibility: visible;
+            }
+            #printable-area, #daily-printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-shop-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+            }
+        }
+        .print-shop-header {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300">
+
+    <!-- Password Lock Screen Overlay -->
+    <div id="lockScreen" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-6">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">عصيرات الامانة </h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter password to open Shop Ledger</p>
+            </div>
+            <form onsubmit="verifyPassword(event)" class="space-y-4">
+                <input type="password" id="passInput" placeholder="Type password" required class="w-full p-3 border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-xl text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 outline-none">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition shadow-lg">Login</button>
+                <p id="passError" class="text-red-500 text-sm hidden">Incorrect password. Please try again.</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="mainApp" class="max-w-6xl mx-auto p-4 sm:p-6 hidden">
+        <!-- Header -->
+        <header class="bg-blue-600 dark:bg-gray-800 text-white p-4 rounded-xl shadow-md mb-6 flex flex-wrap justify-between items-center gap-3 no-print">
+            <h1 class="text-xl sm:text-2xl font-bold"><i class="fa-solid fa-book-open mr-2"></i> Shop Ledger System</h1>
+            <div class="flex items-center space-x-3">
+                <div class="text-sm font-medium bg-blue-700 dark:bg-gray-700 px-3 py-1 rounded-lg">عصيرات الامانة </div>
+                <!-- Night/Light Mode Toggle Button -->
+                <button onclick="toggleDarkMode()" id="darkModeBtn" class="bg-blue-700 dark:bg-yellow-500 text-white dark:text-gray-900 px-3 py-1.5 rounded-lg text-sm font-bold shadow hover:opacity-90 transition flex items-center">
+                    <i id="modeIcon" class="fa-solid fa-moon mr-1"></i> <span id="modeText">Night Mode</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs & Utility Buttons -->
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6 no-print">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchTab('suppliers')" id="tab-suppliers" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow transition"><i class="fa-solid fa-truck-field mr-1"></i> Supplier Ledger</button>
+                <button onclick="switchTab('cashbook')" id="tab-cashbook" class="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium shadow transition"><i class="fa-solid fa-wallet mr-1"></i> Daily Cash & Bank Book</button>
+                <button onclick="switchTab('dailystatement')" id="tab-dailystatement" class="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium shadow transition"><i class="fa-solid fa-file-lines mr-1"></i> Daily Statement</button>
+            </div>
+            <!-- Backup & Reset Controls -->
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition flex items-center shadow" title="Download all data"><i class="fa-solid fa-download mr-1"></i> Backup</button>
+                <button onclick="clearAllData()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition flex items-center shadow" title="Clear all data"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Reset</button>
+            </div>
+        </div>
+
+        <!-- ================= 1. SUPPLIER LEDGER SECTION ================= -->
+        <div id="section-suppliers" class="space-y-6">
+            
+            <!-- All Suppliers Summary Table View -->
+            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200"><i class="fa-solid fa-users-gear mr-1 text-blue-600"></i> Suppliers Ledger List</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">If balance exceeds ₹2000, you can send a WhatsApp alert to the accountant (966509204819).</p>
+                    </div>
+                    <button onclick="scrollToAddSupplier()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center shadow">
+                        <i class="fa-solid fa-user-plus mr-1.5"></i> New Supplier
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">
+                                <th class="p-3">Supplier Name</th>
+                                <th class="p-3">Phone Number</th>
+                                <th class="p-3 text-right">Balance Due</th>
+                                <th class="p-3 text-center">Action & Accountant Alert</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allSuppliersTableBody" class="text-sm divide-y dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+                <div id="supplierFormCard" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md md:col-span-1">
+                    <h2 id="supFormTitle" class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200"><i class="fa-solid fa-user-plus mr-1 text-blue-600"></i> Add New Supplier</h2>
+                    <form id="supplierForm" onsubmit="saveSupplier(event)" class="space-y-3">
+                        <input type="hidden" id="editSupId">
+                        <input type="text" id="supName" placeholder="Supplier Name" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="supPhone" placeholder="Phone Number" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <div class="flex space-x-2">
+                            <button type="submit" id="supSubmitBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Add Supplier</button>
+                            <button type="button" id="supCancelBtn" onclick="resetSupplierForm()" class="hidden bg-gray-400 text-white px-3 py-2 rounded-lg font-medium hover:bg-gray-500 transition">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md md:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200"><i class="fa-solid fa-list mr-1 text-blue-600"></i> Select Ledger</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Select a supplier from the list below to view and print individual transactions.</p>
+                    </div>
+                    <div class="space-y-3">
+                        <select id="supplierSelect" onchange="onSupplierDropdownChange()" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">-- Select Supplier --</option>
+                        </select>
+                        <div id="supplierManageActions" class="hidden flex space-x-2">
+                            <button onclick="editSelectedSupplier()" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition"><i class="fa-solid fa-pen-to-square mr-1"></i> Edit</button>
+                            <button onclick="deleteSelectedSupplier()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-600 transition"><i class="fa-solid fa-trash mr-1"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supplier Statement Section -->
+            <div id="supplierLedgerSection" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hidden">
+                <div id="printable-area">
+                    <div class="print-shop-header">
+                        <h1 class="text-2xl font-bold text-gray-900">عصيرات الامانة </h1>
+                        <p class="text-sm text-gray-700 font-medium">MOBI: 966509204819</p>
+                    </div>
+
+                    <div class="flex justify-between items-center border-b dark:border-gray-700 pb-4 mb-4">
+                        <div>
+                            <h2 id="lblSupName" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Supplier Name</h2>
+                            <p id="lblSupPhone" class="text-sm text-gray-500 dark:text-gray-400">Phone: -</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Balance Due:</p>
+                            <p id="lblSupBalance" class="text-xl font-bold text-red-600 dark:text-red-400">₹0.00</p>
+                        </div>
+                    </div>
+
+                    <div class="no-print bg-gray-50 dark:bg-gray-900 p-4 rounded-lg mb-6 border dark:border-gray-700">
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">Add New Transaction for this Supplier</h3>
+                        <form id="transForm" onsubmit="addSupplierTransaction(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <input type="date" id="transDate" required class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-sm">
+                            <input type="text" id="transDesc" placeholder="Description (e.g. Bill No / Payment)" required class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-sm">
+                            <select id="transType" class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-sm">
+                                <option value="purchase">Purchase (Debit/Dr)</option>
+                                <option value="payment">Payment (Payment/Cr)</option>
+                            </select>
+                            <div class="flex space-x-2">
+                                <input type="number" id="transAmount" placeholder="Amount (₹)" step="0.01" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-sm">
+                                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition">Add</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Supplier Ledger Statement</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">
+                                    <th class="p-2.5">Date</th>
+                                    <th class="p-2.5">Description</th>
+                                    <th class="p-2.5 text-right">Purchase (+)</th>
+                                    <th class="p-2.5 text-right">Payment (-)</th>
+                                    <th class="p-2.5 text-right">Balance</th>
+                                    <th class="p-2.5 text-center no-print">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supplierTransTable" class="text-sm divide-y dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3 no-print border-t dark:border-gray-700 pt-4">
+                    <button onclick="shareOnWhatsApp()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition flex items-center">
+                        <i class="fa-brands fa-whatsapp mr-2"></i> Send via WhatsApp
+                    </button>
+                    <button onclick="window.print()" class="bg-gray-800 dark:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition flex items-center">
+                        <i class="fa-solid fa-print mr-2"></i> Print / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 2. DAILY CASH & BANK BOOK SECTION ================= -->
+        <div id="section-cashbook" class="space-y-6 hidden">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                <h2 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200"><i class="fa-solid fa-wallet mr-1 text-blue-600"></i> Cash & Bank Book (Add Income & Expense)</h2>
+                <form id="cashForm" onsubmit="addCashEntry(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                    <input type="date" id="cashDate" required class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm">
+                    <input type="text" id="cashDesc" placeholder="Description" required class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm">
+                    <select id="cashMode" class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm font-semibold">
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank</option>
+                    </select>
+                    <select id="cashType" class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm">
+                        <option value="in">Cash In / Received</option>
+                        <option value="out">Cash Out / Paid</option>
+                    </select>
+                    <div class="flex space-x-2">
+                        <input type="number" id="cashAmount" placeholder="Amount (₹)" step="0.01" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm">
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">Add</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Overall Cash & Bank Totals Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-green-50 dark:bg-green-950/40 p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
+                    <p class="text-xs text-green-700 dark:text-green-300 font-semibold uppercase">Total Cash In</p>
+                    <p id="lblTotalCashIn" class="text-xl font-bold text-green-600 dark:text-green-400 mt-1">₹0.00</p>
+                </div>
+                <div class="bg-red-50 dark:bg-red-950/40 p-4 rounded-xl border border-red-200 dark:border-red-800 shadow-sm">
+                    <p class="text-xs text-red-700 dark:text-red-300 font-semibold uppercase">Total Cash Out</p>
+                    <p id="lblTotalCashOut" class="text-xl font-bold text-red-600 dark:text-red-400 mt-1">₹0.00</p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
+                    <p class="text-xs text-blue-700 dark:text-blue-300 font-semibold uppercase">Total Bank In</p>
+                    <p id="lblTotalBankIn" class="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">₹0.00</p>
+                </div>
+                <div class="bg-amber-50 dark:bg-amber-950/40 p-4 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm">
+                    <p class="text-xs text-amber-700 dark:text-amber-300 font-semibold uppercase">Total Bank Out</p>
+                    <p id="lblTotalBankOut" class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">₹0.00</p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Cash & Bank Transactions</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">
+                                <th class="p-2.5">Date</th>
+                                <th class="p-2.5">Description</th>
+                                <th class="p-2.5">Mode (Cash/Bank)</th>
+                                <th class="p-2.5 text-right">In (+)</th>
+                                <th class="p-2.5 text-right">Out (-)</th>
+                                <th class="p-2.5 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashTable" class="text-sm divide-y dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 3. DAILY STATEMENT REPORT SECTION ================= -->
+        <div id="section-dailystatement" class="space-y-6 hidden">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md no-print flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200"><i class="fa-solid fa-calendar-day mr-1 text-blue-600"></i> Daily Statement Ledger Report</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Select a specific date to view cash & bank income and expenses for that day.</p>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <input type="date" id="filterDate" onchange="loadDailyStatement()" class="p-2 border dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="loadDailyStatement()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">View Report</button>
+                </div>
+            </div>
+
+            <div id="dailyReportPrintArea" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hidden">
+                <div id="daily-printable-area">
+                    <div class="print-shop-header">
+                        <h1 class="text-2xl font-bold text-gray-900">عصيرات الامانة </h1>
+                        <p class="text-sm text-gray-700 font-medium">Shop Accountant WhatsApp: 966509204819</p>
+                    </div>
+
+                    <div class="flex justify-between items-center border-b dark:border-gray-700 pb-4 mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Daily Cash & Bank Statement</h2>
+                            <p id="lblReportDate" class="text-sm text-gray-500 dark:text-gray-400">Date: -</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Sales for the Day (Cash + Bank In):</p>
+                            <p id="lblTotalSales" class="text-xl font-bold text-blue-600 dark:text-blue-400">₹0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Daily Cash & Bank Summary Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-green-50 dark:bg-green-950/40 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                            <p class="text-xs text-green-700 dark:text-green-300 font-medium">Cash In (Today)</p>
+                            <p id="lblDayCashIn" class="text-lg font-bold text-green-600 dark:text-green-400">₹0.00</p>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-950/40 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                            <p class="text-xs text-red-700 dark:text-red-300 font-medium">Cash Out (Today)</p>
+                            <p id="lblDayCashOut" class="text-lg font-bold text-red-600 dark:text-red-400">₹0.00</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p class="text-xs text-blue-700 dark:text-blue-300 font-medium">Bank In (Today)</p>
+                            <p id="lblDayBankIn" class="text-lg font-bold text-blue-600 dark:text-blue-400">₹0.00</p>
+                        </div>
+                        <div class="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <p class="text-xs text-amber-700 dark:text-amber-300 font-medium">Bank Out (Today)</p>
+                            <p id="lblDayBankOut" class="text-lg font-bold text-amber-600 dark:text-amber-400">₹0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Cash & Bank Transactions of the Day -->
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">1. Cash & Bank Book Transactions of the Day</h3>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">
+                                    <th class="p-2.5">Description</th>
+                                    <th class="p-2.5">Mode</th>
+                                    <th class="p-2.5 text-right">In (+)</th>
+                                    <th class="p-2.5 text-right">Out (-)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailyCashTable" class="text-sm divide-y dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Supplier Transactions of the Day -->
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">2. Supplier Transactions of the Day</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">
+                                    <th class="p-2.5">Supplier Name</th>
+                                    <th class="p-2.5">Description</th>
+                                    <th class="p-2.5 text-right">Purchase</th>
+                                    <th class="p-2.5 text-right">Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailySupplierTable" class="text-sm divide-y dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end no-print border-t dark:border-gray-700 pt-4">
+                    <button onclick="printDailyReport()" class="bg-gray-800 dark:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition flex items-center">
+                        <i class="fa-solid fa-print mr-2"></i> Print Daily Statement
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password Protection Logic
+        const APP_PASSWORD = "9491"; // You can change the password here if needed
+
+        function verifyPassword(e) {
+            e.preventDefault();
+            const inputVal = document.getElementById('passInput').value;
+            const errEl = document.getElementById('passError');
+
+            if (inputVal === APP_PASSWORD) {
+                document.getElementById('lockScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                initApp();
+            } else {
+                errEl.classList.remove('hidden');
+                document.getElementById('passInput').value = '';
+                document.getElementById('passInput').focus();
+            }
+        }
+
+        let db = JSON.parse(localStorage.getItem('shop_ledger_db')) || { suppliers: [], cashbook: [] };
+        const ACCOUNTANT_WHATSAPP = "966565890552";
+
+        function saveData() {
+            localStorage.setItem('shop_ledger_db', JSON.stringify(db));
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('shop_ledger_theme', isDark ? 'dark' : 'light');
+            updateModeButton(isDark);
+        }
+
+        function updateModeButton(isDark) {
+            const icon = document.getElementById('modeIcon');
+            const text = document.getElementById('modeText');
+            if (isDark) {
+                icon.className = "fa-solid fa-sun mr-1";
+                text.innerText = "Normal Mode";
+            } else {
+                icon.className = "fa-solid fa-moon mr-1";
+                text.innerText = "Night Mode";
+            }
+        }
+
+        if (localStorage.getItem('shop_ledger_theme') === 'dark' || (!localStorage.getItem('shop_ledger_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            updateModeButton(true);
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `shop_ledger_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function clearAllData() {
+            if (confirm('Warning: All supplier ledger details and cash book records will be permanently deleted. Do you want to continue?')) {
+                if (confirm('Are you sure you want to delete? This action cannot be undone.')) {
+                    localStorage.removeItem('shop_ledger_db');
+                    db = { suppliers: [], cashbook: [] };
+                    refreshAllViews();
+                    alert('All data has been cleared.');
+                }
+            }
+        }
+
+        function switchTab(tab) {
+            document.getElementById('section-suppliers').classList.toggle('hidden', tab !== 'suppliers');
+            document.getElementById('section-cashbook').classList.toggle('hidden', tab !== 'cashbook');
+            document.getElementById('section-dailystatement').classList.toggle('hidden', tab !== 'dailystatement');
+
+            document.getElementById('tab-suppliers').className = tab === 'suppliers' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow transition' : 'px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium shadow transition';
+            document.getElementById('tab-cashbook').className = tab === 'cashbook' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow transition' : 'px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium shadow transition';
+            document.getElementById('tab-dailystatement').className = tab === 'dailystatement' ? 'px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow transition' : 'px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium shadow transition';
+
+            if(tab === 'dailystatement' && !document.getElementById('filterDate').value) {
+                document.getElementById('filterDate').valueAsDate = new Date();
+                loadDailyStatement();
+            }
+        }
+
+        // ================= SUPPLIER FUNCTIONS =================
+        function refreshAllViews() {
+            loadSupplierDropdown();
+            renderAllSuppliersTable();
+            renderCashbook();
+        }
+
+        function scrollToAddSupplier() {
+            document.getElementById('supplierFormCard').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('supName').focus();
+        }
+
+        function saveSupplier(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editSupId').value;
+            const name = document.getElementById('supName').value.trim();
+            const phone = document.getElementById('supPhone').value.trim();
+
+            if(editId) {
+                const supplier = db.suppliers.find(s => s.id == editId);
+                if(supplier) {
+                    supplier.name = name;
+                    supplier.phone = phone;
+                    saveData();
+                    alert('Supplier details updated!');
+                }
+            } else {
+                db.suppliers.push({ id: Date.now(), name, phone, transactions: [] });
+                saveData();
+                alert('New supplier added successfully!');
+            }
+
+            resetSupplierForm();
+            refreshAllViews();
+            if(editId) {
+                document.getElementById('supplierSelect').value = editId;
+                loadSupplierLedger();
+            }
+        }
+
+        function loadSupplierDropdown() {
+            const select = document.getElementById('supplierSelect');
+            const selectedVal = select.value;
+            select.innerHTML = '<option value="">-- Select Supplier --</option>';
+            db.suppliers.forEach(sup => {
+                select.innerHTML += `<option value="${sup.id}">${sup.name} (${sup.phone || 'No Phone'})</option>`;
+            });
+            select.value = selectedVal;
+        }
+
+        function getSupplierBalance(supplier) {
+            let balance = 0;
+            supplier.transactions.forEach(t => {
+                let purchase = t.type === 'purchase' ? t.amount : 0;
+                let payment = t.type === 'payment' ? t.amount : 0;
+                balance += purchase - payment;
+            });
+            return balance;
+        }
+
+        function renderAllSuppliersTable() {
+            const tbody = document.getElementById('allSuppliersTableBody');
+            tbody.innerHTML = '';
+
+            if(db.suppliers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">No suppliers found. Please add a new one.</td></tr>`;
+                return;
+            }
+
+            db.suppliers.forEach(sup => {
+                let balance = getSupplierBalance(sup);
+                let isAbove2000 = balance > 2000;
+
+                let actionHtml = `
+                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                        <button onclick="selectAndOpenSupplier(${sup.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition"><i class="fa-solid fa-eye mr-1"></i> Ledger</button>
+                `;
+
+                if(isAbove2000) {
+                    actionHtml += `
+                        <button onclick="sendAccountantWhatsAppAlert('${sup.name}', ${balance})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold transition animate-pulse flex items-center shadow" title="Send alert to accountant">
+                            <i class="fa-brands fa-whatsapp mr-1"></i> Accountant Alert (₹2000+)
+                        </button>
+                    `;
+                }
+                actionHtml += `</div>`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-3 font-medium text-gray-800 dark:text-gray-100">${sup.name}</td>
+                        <td class="p-3 text-gray-600 dark:text-gray-300">${sup.phone || 'Not Available'}</td>
+                        <td class="p-3 text-right font-bold ${balance > 2000 ? 'text-red-600 dark:text-red-400' : (balance >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400')}">₹${balance.toFixed(2)}</td>
+                        <td class="p-3 text-center">${actionHtml}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function sendAccountantWhatsAppAlert(supName, balance) {
+            let message = `*عصيرات الامانة - Supplier Payment Alert*%0ANote: The balance due for supplier *${supName}* has exceeded ₹2000.%0A*Total Balance Due:* ₹${balance.toFixed(2)}%0A%0APlease check the accounts.`;
+            window.open(`https://wa.me/${ACCOUNTANT_WHATSAPP}?text=${message}`, '_blank');
+        }
+
+        function selectAndOpenSupplier(supId) {
+            document.getElementById('supplierSelect').value = supId;
+            loadSupplierLedger();
+            document.getElementById('supplierLedgerSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function onSupplierDropdownChange() {
+            loadSupplierLedger();
+        }
+
+        function loadSupplierLedger() {
+            const supId = document.getElementById('supplierSelect').value;
+            const section = document.getElementById('supplierLedgerSection');
+            const manageActions = document.getElementById('supplierManageActions');
+
+            if (!supId) { 
+                section.classList.add('hidden'); 
+                manageActions.classList.add('hidden');
+                return; 
+            }
+
+            section.classList.remove('hidden');
+            manageActions.classList.remove('hidden');
+
+            const supplier = db.suppliers.find(s => s.id == supId);
+            document.getElementById('lblSupName').innerText = supplier.name;
+            document.getElementById('lblSupPhone').innerText = `Phone: ${supplier.phone || 'Not Available'}`;
+            document.getElementById('transDate').valueAsDate = new Date();
+            renderSupplierTransactions(supplier);
+        }
+
+        function editSelectedSupplier() {
+            const supId = document.getElementById('supplierSelect').value;
+            const supplier = db.suppliers.find(s => s.id == supId);
+            if(!supplier) return;
+
+            document.getElementById('editSupId').value = supplier.id;
+            document.getElementById('supName').value = supplier.name;
+            document.getElementById('supPhone').value = supplier.phone || '';
+            document.getElementById('supFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square mr-1 text-amber-600"></i> Edit Supplier Details';
+            document.getElementById('supSubmitBtn').innerText = 'Save Changes';
+            document.getElementById('supSubmitBtn').className = 'w-full bg-amber-600 text-white py-2 rounded-lg font-medium hover:bg-amber-700 transition';
+            document.getElementById('supCancelBtn').classList.remove('hidden');
+            document.getElementById('supplierFormCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetSupplierForm() {
+            document.getElementById('supplierForm').reset();
+            document.getElementById('editSupId').value = '';
+            document.getElementById('supFormTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-1 text-blue-600"></i> Add New Supplier';
+            document.getElementById('supSubmitBtn').innerText = 'Add Supplier';
+            document.getElementById('supSubmitBtn').className = 'w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition';
+            document.getElementById('supCancelBtn').classList.add('hidden');
+        }
+
+        function deleteSelectedSupplier() {
+            const supId = document.getElementById('supplierSelect').value;
+            const supplier = db.suppliers.find(s => s.id == supId);
+            if(!supplier) return;
+
+            if(confirm(`Are you sure you want to completely delete supplier "${supplier.name}" and their ledger details?`)) {
+                db.suppliers = db.suppliers.filter(s => s.id != supId);
+                saveData();
+                refreshAllViews();
+                document.getElementById('supplierLedgerSection').classList.add('hidden');
+                document.getElementById('supplierManageActions').classList.add('hidden');
+                alert('Supplier deleted.');
+            }
+        }
+
+        function addSupplierTransaction(e) {
+            e.preventDefault();
+            const supId = document.getElementById('supplierSelect').value;
+            const supplier = db.suppliers.find(s => s.id == supId);
+            const date = document.getElementById('transDate').value;
+            const desc = document.getElementById('transDesc').value;
+            const type = document.getElementById('transType').value;
+            const amount = parseFloat(document.getElementById('transAmount').value);
+
+            supplier.transactions.push({ id: Date.now(), date, desc, type, amount });
+            saveData();
+            document.getElementById('transForm').reset();
+            document.getElementById('transDate').valueAsDate = new Date();
+            renderSupplierTransactions(supplier);
+            renderAllSuppliersTable();
+        }
+
+        function renderSupplierTransactions(supplier) {
+            const tbody = document.getElementById('supplierTransTable');
+            tbody.innerHTML = '';
+            let runningBalance = 0;
+            if(supplier.transactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No transactions recorded.</td></tr>`;
+                document.getElementById('lblSupBalance').innerText = '₹0.00';
+                return;
+            }
+            supplier.transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            supplier.transactions.forEach(t => {
+                let purchase = t.type === 'purchase' ? t.amount : 0;
+                let payment = t.type === 'payment' ? t.amount : 0;
+                runningBalance += purchase - payment;
+                tbody.innerHTML += `
+                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-2.5">${t.date}</td>
+                        <td class="p-2.5">${t.desc}</td>
+                        <td class="p-2.5 text-right text-red-600 dark:text-red-400">${purchase ? '₹' + purchase.toFixed(2) : '-'}</td>
+                        <td class="p-2.5 text-right text-green-600 dark:text-green-400">${payment ? '₹' + payment.toFixed(2) : '-'}</td>
+                        <td class="p-2.5 text-right font-semibold">₹${runningBalance.toFixed(2)}</td>
+                        <td class="p-2.5 text-center no-print">
+                            <button onclick="deleteSupplierTrans(${supplier.id}, ${t.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('lblSupBalance').innerText = `₹${runningBalance.toFixed(2)}`;
+        }
+
+        function deleteSupplierTrans(supId, tId) {
+            if(confirm('Are you sure you want to delete this transaction?')) {
+                const supplier = db.suppliers.find(s => s.id == supId);
+                supplier.transactions = supplier.transactions.filter(t => t.id !== tId);
+                saveData();
+                renderSupplierTransactions(supplier);
+                renderAllSuppliersTable();
+            }
+        }
+
+        function shareOnWhatsApp() {
+            const supId = document.getElementById('supplierSelect').value;
+            const supplier = db.suppliers.find(s => s.id == supId);
+            if(!supplier || !supplier.phone) { alert('Supplier phone number not available!'); return; }
+            let balance = document.getElementById('lblSupBalance').innerText;
+            let message = `*عصيرات الامانة  - Supplier Statement*%0A*Supplier:* ${supplier.name}%0A*Current Balance Due:* ${balance}`;
+            window.open(`https://wa.me/${supplier.phone}?text=${message}`, '_blank');
+        }
+
+        // ================= CASH & BANK BOOK FUNCTIONS =================
+        function addCashEntry(e) {
+            e.preventDefault();
+            const date = document.getElementById('cashDate').value;
+            const desc = document.getElementById('cashDesc').value;
+            const mode = document.getElementById('cashMode').value;
+            const type = document.getElementById('cashType').value;
+            const amount = parseFloat(document.getElementById('cashAmount').value);
+
+            db.cashbook.push({ id: Date.now(), date, desc, mode, type, amount });
+            saveData();
+            document.getElementById('cashForm').reset();
+            document.getElementById('cashDate').valueAsDate = new Date();
+            renderCashbook();
+        }
+
+        function renderCashbook() {
+            const tbody = document.getElementById('cashTable');
+            tbody.innerHTML = '';
+
+            let totalCashIn = 0;
+            let totalCashOut = 0;
+            let totalBankIn = 0;
+            let totalBankOut = 0;
+
+            if(db.cashbook.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No data available.</td></tr>`;
+                document.getElementById('lblTotalCashIn').innerText = '₹0.00';
+                document.getElementById('lblTotalCashOut').innerText = '₹0.00';
+                document.getElementById('lblTotalBankIn').innerText = '₹0.00';
+                document.getElementById('lblTotalBankOut').innerText = '₹0.00';
+                return;
+            }
+
+            db.cashbook.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            db.cashbook.forEach(c => {
+                let mode = c.mode || 'cash';
+                let amount = c.amount || 0;
+
+                let inAmt = (c.type === 'in') ? amount : 0;
+                let outAmt = (c.type === 'out') ? amount : 0;
+
+                if (mode === 'cash') {
+                    totalCashIn += inAmt;
+                    totalCashOut += outAmt;
+                } else if (mode === 'bank') {
+                    totalBankIn += inAmt;
+                    totalBankOut += outAmt;
+                }
+
+                let modeBadge = mode === 'bank' 
+                    ? '<span class="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded text-xs font-semibold">Bank</span>' 
+                    : '<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold">Cash</span>';
+
+                tbody.innerHTML += `
+                    <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-2.5">${c.date}</td>
+                        <td class="p-2.5">${c.desc}</td>
+                        <td class="p-2.5">${modeBadge}</td>
+                        <td class="p-2.5 text-right text-green-600 dark:text-green-400">${inAmt ? '₹' + inAmt.toFixed(2) : '-'}</td>
+                        <td class="p-2.5 text-right text-red-600 dark:text-red-400">${outAmt ? '₹' + outAmt.toFixed(2) : '-'}</td>
+                        <td class="p-2.5 text-center">
+                            <button onclick="deleteCash(${c.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('lblTotalCashIn').innerText = `₹${totalCashIn.toFixed(2)}`;
+            document.getElementById('lblTotalCashOut').innerText = `₹${totalCashOut.toFixed(2)}`;
+            document.getElementById('lblTotalBankIn').innerText = `₹${totalBankIn.toFixed(2)}`;
+            document.getElementById('lblTotalBankOut').innerText = `₹${totalBankOut.toFixed(2)}`;
+        }
+
+        function deleteCash(id) {
+            if(confirm('Are you sure you want to delete?')) {
+                db.cashbook = db.cashbook.filter(c => c.id !== id);
+                saveData();
+                renderCashbook();
+            }
+        }
+
+        // ================= DAILY STATEMENT REPORT FUNCTIONS =================
+        function loadDailyStatement() {
+            const selectedDate = document.getElementById('filterDate').value;
+            const reportSection = document.getElementById('dailyReportPrintArea');
+            if(!selectedDate) { reportSection.classList.add('hidden'); return; }
+
+            reportSection.classList.remove('hidden');
+            document.getElementById('lblReportDate').innerText = `Date: ${selectedDate}`;
+
+            const dayCash = db.cashbook.filter(c => c.date === selectedDate);
+            let dayCashIn = 0;
+            let dayCashOut = 0;
+            let dayBankIn = 0;
+            let dayBankOut = 0;
+
+            const cashTbody = document.getElementById('dailyCashTable');
+            cashTbody.innerHTML = '';
+
+            if(dayCash.length === 0) {
+                cashTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-500">No cash & bank book details for this date.</td></tr>`;
+            } else {
+                dayCash.forEach(c => {
+                    let mode = c.mode || 'cash';
+                    let amount = c.amount || 0;
+                    let inAmt = (c.type === 'in') ? amount : 0;
+                    let outAmt = (c.type === 'out') ? amount : 0;
+
+                    if (mode === 'cash') {
+                        dayCashIn += inAmt;
+                        dayCashOut += outAmt;
+                    } else {
+                        dayBankIn += inAmt;
+                        dayBankOut += outAmt;
+                    }
+
+                    let modeText = mode === 'bank' ? 'Bank' : 'Cash';
+                    cashTbody.innerHTML += `
+                        <tr class="border-b dark:border-gray-700">
+                            <td class="p-2.5">${c.desc}</td>
+                            <td class="p-2.5 font-medium">${modeText}</td>
+                            <td class="p-2.5 text-right text-green-600 dark:text-green-400">${inAmt ? '₹' + inAmt.toFixed(2) : '-'}</td>
+                            <td class="p-2.5 text-right text-red-600 dark:text-red-400">${outAmt ? '₹' + outAmt.toFixed(2) : '-'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const supTbody = document.getElementById('dailySupplierTable');
+            supTbody.innerHTML = '';
+            let supTransCount = 0;
+
+            db.suppliers.forEach(sup => {
+                sup.transactions.filter(t => t.date === selectedDate).forEach(t => {
+                    supTransCount++;
+                    let pur = t.type === 'purchase' ? t.amount : 0;
+                    let pay = t.type === 'payment' ? t.amount : 0;
+                    supTbody.innerHTML += `
+                        <tr class="border-b dark:border-gray-700">
+                            <td class="p-2.5 font-medium">${sup.name}</td>
+                            <td class="p-2.5">${t.desc}</td>
+                            <td class="p-2.5 text-right text-red-600 dark:text-red-400">${pur ? '₹' + pur.toFixed(2) : '-'}</td>
+                            <td class="p-2.5 text-right text-green-600 dark:text-green-400">${pay ? '₹' + pay.toFixed(2) : '-'}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            if(supTransCount === 0) {
+                supTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-500">No supplier transactions for this date.</td></tr>`;
+            }
+
+            document.getElementById('lblDayCashIn').innerText = `₹${dayCashIn.toFixed(2)}`;
+            document.getElementById('lblDayCashOut').innerText = `₹${dayCashOut.toFixed(2)}`;
+            document.getElementById('lblDayBankIn').innerText = `₹${dayBankIn.toFixed(2)}`;
+            document.getElementById('lblDayBankOut').innerText = `₹${dayBankOut.toFixed(2)}`;
+            
+            let totalSales = dayCashIn + dayBankIn;
+            document.getElementById('lblTotalSales').innerText = `₹${totalSales.toFixed(2)}`;
+        }
+
+        function printDailyReport() {
+            window.print();
+        }
+
+        function initApp() {
+            document.getElementById('cashDate').valueAsDate = new Date();
+            refreshAllViews();
+        }
+    </script>
+</body>
+</html>
